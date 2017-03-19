@@ -53,7 +53,7 @@ filmToString (Film title director year fans) = "\n Title: " ++ title ++ "\n Dire
 
 listToString :: [String] -> String
 listToString [] = ""
-listToString (x:xs) = x ++ " " ++ listToString xs
+listToString (x:xs) = x ++ ", " ++ listToString xs
 
 getFilmsFans :: [Film] -> [Fans]
 getFilmsFans [(Film _ _ _ fans)] = fans
@@ -81,7 +81,9 @@ getDirectorsFans ((Film title director year fans):films) = fans ++ getDirectorsF
 
 filmExists :: [Film] -> Title -> Bool
 filmExists [] title = False
-filmExists ((Film title director year fans):films) titleToCheck = if titleToCheck == title then True else filmExists films titleToCheck
+filmExists ((Film title director year fans):films) titleToCheck = if titleToCheck == title
+                                                                 then True 
+                                                                 else filmExists films titleToCheck
 
 fanExists :: [Fans] -> Fans -> Bool
 fanExists  [] fans = False
@@ -154,6 +156,7 @@ allDirectors fanToFilter filmdb = (unlines.map occurancesToString) (getAllOccura
 main :: IO ()
 main = do films <- readFile "films.txt"
           let filmDB = read films :: [Film]
+          putStrLn $ databaseToString filmDB
           putStrLn "Enter your name: "
           name <- getLine
           filmDB <- userInterface filmDB name
