@@ -56,7 +56,7 @@ listToString [] = ""
 listToString (x:xs) = x ++ ", " ++ listToString xs
 
 getFilmsFans :: [Film] -> [Fans]
-getFilmsFans [(Film _ _ _ fans)] = fans
+getFilmsFans [Film _ _ _ fans] = fans
 
 
 getFilmByTitle :: Title -> [Film] -> [Film]
@@ -81,17 +81,15 @@ getDirectorsFans ((Film title director year fans):films) = fans ++ getDirectorsF
 
 filmExists :: [Film] -> Title -> Bool
 filmExists [] title = False
-filmExists ((Film title director year fans):films) titleToCheck = if titleToCheck == title
-                                                                 then True 
-                                                                 else filmExists films titleToCheck
+filmExists ((Film title director year fans):films) titleToCheck = (titleToCheck == title) || filmExists films titleToCheck
 
 fanExists :: [Fans] -> Fans -> Bool
 fanExists  [] fans = False
-fanExists (x:xs) fansToCheck = if fansToCheck == x then True else fanExists xs fansToCheck
+fanExists (x:xs) fansToCheck = (fansToCheck == x) || fanExists xs fansToCheck
 
 getFilmsDirectors :: [Film] -> [Director]
 getFilmsDirectors [] = []
-getFilmsDirectors ((Film title director year fans):films) = [director] ++ getFilmsDirectors films
+getFilmsDirectors ((Film title director year fans):films) = director : getFilmsDirectors films
 
 getOccurancesDirectors :: Director -> [Director] -> Int
 getOccurancesDirectors x xs = (length . filter (== x)) xs
@@ -112,7 +110,7 @@ addFilm title director year filmDB = filmDB ++ [Film title director year []]
 
 
 databaseToString :: [Film] -> String
-databaseToString filmDb = (unlines.map filmToString) filmDb
+databaseToString = (unlines . map filmToString)
 
 filmsAfterYear :: Year -> [Film] -> String
 filmsAfterYear yearToFilter db = databaseToString (getFilmsAfterYear yearToFilter db)
@@ -128,7 +126,7 @@ userIsFan fan filmTitle = map(\(Film title director year fans) -> if title == fi
                                                                 then (Film title director year (fan : fans)) 
                                                                 else (Film title director year fans))
 directorsFans :: Director -> [Film] -> String
-directorsFans director db = listToString( nub (getDirectorsFans db))
+directorsFans director db = listToString( nub (getDirectorsFans $ getDirectorsFilms director $ db))
 
 allDirectors :: Fans -> [Film] -> String
 allDirectors fanToFilter filmdb = (unlines.map occurancesToString) (getAllOccurancesDirectors (nub (listOfFansDirectors)) (listOfFansDirectors))
