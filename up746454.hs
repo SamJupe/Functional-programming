@@ -3,10 +3,8 @@
 --UP746454
 
 --
-import Data.List hiding (delete)
-import Data.Set hiding (foldr, map, filter)
-import Text.Printf
-
+import Data.List
+import Data.Set hiding (map, filter)
 --
 -- Types
 type Title    = String
@@ -92,7 +90,7 @@ getFilmsDirectors [] = []
 getFilmsDirectors ((Film title director year fans):films) = director : getFilmsDirectors films
 
 getOccurancesDirectors :: Director -> [Director] -> Int
-getOccurancesDirectors x xs = (length . filter (== x)) xs
+getOccurancesDirectors x = (length . filter (== x)) 
 
 getAllOccurancesDirectors :: [Director] -> [Director] -> [(Director, Int)]
 getAllOccurancesDirectors [] test = []
@@ -110,7 +108,7 @@ addFilm title director year filmDB = filmDB ++ [Film title director year []]
 
 
 databaseToString :: [Film] -> String
-databaseToString = (unlines . map filmToString)
+databaseToString = unlines . map filmToString
 
 filmsAfterYear :: Year -> [Film] -> String
 filmsAfterYear yearToFilter db = databaseToString (getFilmsAfterYear yearToFilter db)
@@ -126,7 +124,7 @@ userIsFan fan filmTitle = map(\(Film title director year fans) -> if title == fi
                                                                 then (Film title director year (fan : fans)) 
                                                                 else (Film title director year fans))
 directorsFans :: Director -> [Film] -> String
-directorsFans director db = listToString( nub (getDirectorsFans $ getDirectorsFilms director $ db))
+directorsFans director db = listToString( nub (getDirectorsFans $ getDirectorsFilms director db))
 
 allDirectors :: Fans -> [Film] -> String
 allDirectors fanToFilter filmdb = (unlines.map occurancesToString) (getAllOccurancesDirectors (nub (listOfFansDirectors)) (listOfFansDirectors))
@@ -134,17 +132,16 @@ allDirectors fanToFilter filmdb = (unlines.map occurancesToString) (getAllOccura
 -- Demo function to test basic functionality (without persistence - i.e. 
 -- testDatabase doesn't change and nothing is saved/loaded to/from file).
 
---demo :: Int -> IO ()
---demo 1  = putStrLn all films after adding 2017 film "Alien: Covenant"
---                   by "Ridley Scott" to testDatabase
---demo 2  = putStrLn (filmsAsString testDatabase)
---demo 3  = putStrLn all films released after 2008
---demo 4  = putStrLn all films that "Liz" is a fan of
---demo 5  = putStrLn all fans of "Jaws"
---demo 6  = putStrLn all films after "Liz" says she becomes fan of "The Fly"
---demo 6 = putStrLn all films after "Liz" says she becomes fan of "Avatar"
---demo 7 =  putStrLn all fans of films directed by "James Cameron"
---demo 8  = putStrLn all directors & no. of their films that "Liz" is a fan of
+demo :: Int -> IO ()
+demo 1  = putStrLn (databaseToString (addFilm "Alien Covenant" "Ridley Scott" 2017 testDatabase))
+demo 2  = putStrLn $ databaseToString testDatabase
+demo 3  = putStrLn $ filmsAfterYear 2008 testDatabase
+demo 4  = putStrLn $ fanOfFilms "Liz" testDatabase
+demo 5  = putStrLn $ filmsFans "Jaws" testDatabase
+demo 6  = putStrLn $ (databaseToString (userIsFan "Liz" "The Fly" testDatabase))
+demo 66 = putStrLn $ (databaseToString (userIsFan "Liz" "Avatar" testDatabase))
+demo 7  = putStrLn $ directorsFans "James Cameron" testDatabase
+demo 8  = putStrLn $ allDirectors "Liz" testDatabase
 
 --
 --
@@ -164,75 +161,78 @@ userInterface :: [Film] -> String -> IO [Film]
 userInterface db name = do
         putStrLn "\n Menu"
         putStrLn "1 - Add a new film to the database"
-        putStrLn "2 - show films in the database"
+        putStrLn "2 - Show films in the database"
         putStrLn "3 - Give all the films that released after a particular year"
         putStrLn "4 - Give all films that particular user is a fan of"
         putStrLn "5 - Give all the fans of a particular film"
         putStrLn "6 - Become a fan of a film"
         putStrLn "7 - Give all fans of a particular director"
-        putStrLn "8 - List all directors"
+        putStrLn "8 - Give all directors of a fan"
         putStrLn "9 - Save and exit"
         input <- getLine
-        if input /= "0"
-            then case input of
-                "1" -> do
-                    putStrLn "Enter Title of film: "
-                    filmName <- getLine
-                    if (filmExists db filmName) then do
-                        putStrLn "Unable to add this film to database. Title already exists."
-                        userInterface db name
-                                else do
-                                    putStrLn "Enter the Directors name: "
-                                    directorName <- getLine
-                                    putStrLn "Enter the year the film was released: "
-                                    getYear <- getLine
-                                    let year = read getYear :: Year 
-                                    putStrLn "Film has been added"
-                                    userInterface (addFilm filmName directorName year db) name
-                
-                "2" -> do
-                    putStrLn $ databaseToString db
+        case input of
+            "1" -> do
+                putStrLn "Enter Title of film: "
+                filmName <- getLine
+                if (filmExists db filmName) then do
+                    putStrLn "Unable to add this film to database. Title already exists."
                     userInterface db name
-                "3" -> do 
-                    putStrLn "Enter The year: "
-                    getYear <- getLine
-                    let year = read getYear :: Year 
-                    putStrLn $ filmsAfterYear year db  
+                            else do
+                                putStrLn "Enter the Directors name: "
+                                directorName <- getLine
+                                putStrLn "Enter the year the film was released: "
+                                getYear <- getLine
+                                let year = read getYear :: Year 
+                                putStrLn "Film has been added"
+                                userInterface (addFilm filmName directorName year db) name
+            
+            "2" -> do
+                putStrLn $ databaseToString db
+                userInterface db name
+            "3" -> do 
+                putStrLn "Enter The year: "
+                getYear <- getLine
+                let year = read getYear :: Year 
+                putStrLn $ filmsAfterYear year db  
+                userInterface db name
+            "4" -> do
+                putStrLn $ fanOfFilms name db
+                userInterface db name
+            "5" -> do
+                putStrLn "Enter The films Title: "
+                filmName <- getLine
+                if(filmExists db filmName) then do
+                    putStrLn $ filmsFans filmName db
                     userInterface db name
-                "4" -> do
-                    putStrLn $ fanOfFilms name db
+                else do
+                    putStrLn "The film does not exist in the database."
                     userInterface db name
-                "5" -> do
-                    putStrLn "Enter The films Title: "
-                    filmName <- getLine
-                    if(filmExists db filmName) then do
-                        putStrLn $ filmsFans filmName db
+            "6" -> do
+                putStrLn "Enter Film name you are a fan of: "
+                filmName <- getLine
+                if (filmExists db filmName) then do
+                    if fanExists (getFilmsFans (getFilmByTitle  filmName db)) name then do
+                        putStrLn "You are already a fan!"
                         userInterface db name
                     else do
-                        putStrLn "The film does not exist in the database."
-                        userInterface db name
-                "6" -> do
-                    putStrLn "Enter Film name you are a fan of: "
-                    filmName <- getLine
-                    if (filmExists db filmName) then do
-                        if fanExists (getFilmsFans (getFilmByTitle  filmName db)) name then do
-                            putStrLn "You are already a fan!"
-                            userInterface db name
-                        else do
-                            putStrLn "added you as fan" 
-                            userInterface (userIsFan name filmName db ) name
-                                else do
-                                    putStrLn "Unable to add you as a fan because film does not exist in database."
-                                    userInterface db name
-                "7" -> do
-                    putStrLn "Enter Directors name: "
-                    directorsName <- getLine
-                    putStrLn $ directorsFans directorsName db
-                    userInterface db name
-                "8" -> do
-                    putStrLn $ allDirectors name db
-                    userInterface db name
-            else
+                        putStrLn "added you as fan" 
+                        userInterface (userIsFan name filmName db ) name
+                            else do
+                                putStrLn "Unable to add you as a fan because film does not exist in database."
+                                userInterface db name
+            "7" -> do
+                putStrLn "Enter Directors name: "
+                directorsName <- getLine
+                putStrLn $ directorsFans directorsName db
+                userInterface db name
+            "8" -> do
+                putStrLn $ allDirectors name db
+                userInterface db name
+            "9" -> do
+                putStrLn "exitting and saving database..."
                 return db
+            _ -> do
+                putStrLn "\n\nIncorrect option please try again."
+                userInterface db name
 
                                 
