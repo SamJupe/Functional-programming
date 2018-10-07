@@ -1,1 +1,1 @@
-# Functional programming assignment!
+# Functional programming assignment
